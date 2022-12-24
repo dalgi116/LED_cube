@@ -1,22 +1,67 @@
 const int latchPin = 2;
 const int clockPin = 3;
 const int dataPin = 4;
+const int touchSensorPin = 5;
 
 byte dataArray1[20];
 byte dataArray2[20];
+int mode = 0;
+bool touchDetected;
+bool readyToChange = true;
+long unsigned int startCountingTime;
+int difference;
+int j = 0;
 
 void setup() {
-pinMode(latchPin, OUTPUT);
-pinMode(clockPin, OUTPUT);
-pinMode(dataPin, OUTPUT);
-
-updateRegister(0xFF, 0xFF);
+  Serial.begin(9600);
+  pinMode(latchPin, OUTPUT);
+  pinMode(clockPin, OUTPUT);
+  pinMode(dataPin, OUTPUT);
+  
+  updateRegister(0xFF, 0xFF);
 }
 
 void loop() {
-  mode3();
+  touchDetected = digitalRead(touchSensorPin);
+
+  if (touchDetected) {
+    if (readyToChange) {
+      startCountingTime = millis();
+      readyToChange = false;
+      if (mode == 3) {
+        mode = 0;
+      } else {
+        mode++;
+      }
+    }
+  }
+  difference = millis() - startCountingTime;
+  if (difference > 500) {
+    readyToChange = true;
+  }
+  
+  switch (mode) {
+    case 0:
+      mode0();
+      break;
+    case 1:
+      mode1();
+      break;
+    case 2:
+      mode2();
+      break;
+    case 3:
+      mode3();
+      break;
+  }
 }
 
+
+void mode0() {
+  dataArray1[0] = 0xFF;
+  dataArray2[0] = 0xFF;
+  updateRegister(dataArray1[0], dataArray2[0]);
+}
 
 void mode1() {
   dataArray1[0] = 0x00;
@@ -39,43 +84,37 @@ void mode2() {
   dataArray2[4] = 0x69;
   dataArray2[5] = 0x9F;
 
-  for (int j = 0; j < 6; j++) {
-    updateRegister(dataArray1[j], dataArray2[j]);
-    delay(400);
-  }
+  playSequence(5, 400);
 }
 
 void mode3() {
-  dataArray1[0] = 0xFF;
-  dataArray1[1] = 0xFF;
-  dataArray1[2] = 0xFF;
-  dataArray1[3] = 0xFF;
-  dataArray1[4] = 0xFF;
+  dataArray1[0] = 0x7F;
+  dataArray1[1] = 0xBF;
+  dataArray1[2] = 0xDF;
+  dataArray1[3] = 0xEF;
+  dataArray1[4] = 0xFE;
   dataArray1[5] = 0xF7;
   dataArray1[6] = 0x7F;
   dataArray1[7] = 0xBF;
   dataArray1[8] = 0xDF;
   dataArray1[9] = 0xEF;
   dataArray1[10] = 0xFE;
-  dataArray1[11] = 0xFF;
+  dataArray1[11] = 0xF7;
   
   dataArray2[0] = 0xFE;
   dataArray2[1] = 0xFD;
   dataArray2[2] = 0xFB;
   dataArray2[3] = 0xF7;
   dataArray2[4] = 0x7F;
-  dataArray2[5] = 0xFF;
-  dataArray2[6] = 0xFF;
-  dataArray2[7] = 0xFF;
-  dataArray2[8] = 0xFF;
-  dataArray2[9] = 0xFF;
-  dataArray2[10] = 0xFF;
+  dataArray2[5] = 0xEF;
+  dataArray2[6] = 0xFE;
+  dataArray2[7] = 0xFD;
+  dataArray2[8] = 0xFB;
+  dataArray2[9] = 0xF7;
+  dataArray2[10] = 0x7F;
   dataArray2[11] = 0xEF;
 
-  for (int j = 0; j < 12; j++) {
-    updateRegister(dataArray1[j], dataArray2[j]);
-    delay(200);
-  }
+  playSequence(5, 200);
 }
 
 void shiftOut(int myDataPin, int myClockPin, byte myDataOut) {
@@ -104,4 +143,17 @@ void updateRegister(byte data1,byte data2) {
   shiftOut(dataPin, clockPin, data1);
   shiftOut(dataPin, clockPin, data2);
   digitalWrite(latchPin, HIGH);
+}
+
+void playSequence(int indexes, int delayTime) {
+  if (millis() % delayTime == 0) {
+    delay(10);
+    updateRegister(dataArray1[j], dataArray2[j]);
+    Serial.println(j);
+    if (j == indexes) {
+      j = 0;
+    } else {
+      j++;
+    }
+  }
 }
