@@ -13,7 +13,6 @@ int difference;
 int j = 0;
 
 void setup() {
-  Serial.begin(9600);
   pinMode(latchPin, OUTPUT);
   pinMode(clockPin, OUTPUT);
   pinMode(dataPin, OUTPUT);
@@ -28,7 +27,7 @@ void loop() {
     if (readyToChange) {
       startCountingTime = millis();
       readyToChange = false;
-      if (mode == 3) {
+      if (mode == 5) {
         mode = 0;
       } else {
         mode++;
@@ -53,6 +52,12 @@ void loop() {
     case 3:
       mode3();
       break;
+    case 4:
+      mode4();
+      break;
+    case 5:
+      mode5();
+      break;
   }
 }
 
@@ -70,6 +75,22 @@ void mode1() {
 }
 
 void mode2() {
+  dataArray1[0] = 0x06;
+  dataArray2[0] = 0x60;
+  updateRegister(dataArray1[0], dataArray2[0]);
+}
+
+void mode3() {
+  dataArray1[0] = 0xF9;
+  dataArray1[1] = 0x06;
+  
+  dataArray2[0] = 0x9F;
+  dataArray2[1] = 0x60;
+
+  playSequence(1, 3000);
+}
+
+void mode4() {
   dataArray1[0] = 0xFF;
   dataArray1[1] = 0xF9;
   dataArray1[2] = 0x96;
@@ -84,10 +105,10 @@ void mode2() {
   dataArray2[4] = 0x69;
   dataArray2[5] = 0x9F;
 
-  playSequence(5, 400);
+  playSequence(5, 300);
 }
 
-void mode3() {
+void mode5() {
   dataArray1[0] = 0x7F;
   dataArray1[1] = 0xBF;
   dataArray1[2] = 0xDF;
@@ -149,7 +170,6 @@ void playSequence(int indexes, int delayTime) {
   if (millis() % delayTime == 0) {
     delay(10);
     updateRegister(dataArray1[j], dataArray2[j]);
-    Serial.println(j);
     if (j == indexes) {
       j = 0;
     } else {
